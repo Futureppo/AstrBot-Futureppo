@@ -431,7 +431,6 @@ class ProviderGoogleGenAI(Provider):
                 continue
 
         llm_response = LLMResponse("assistant")
-        llm_response.raw_completion = result
         llm_response.result_chain = self._process_content_parts(result, llm_response)
         return llm_response
 
@@ -482,7 +481,6 @@ class ProviderGoogleGenAI(Provider):
                 part.function_call for part in chunk.candidates[0].content.parts
             ):
                 llm_response = LLMResponse("assistant", is_chunk=False)
-                llm_response.raw_completion = chunk
                 llm_response.result_chain = self._process_content_parts(
                     chunk, llm_response
                 )
@@ -498,7 +496,6 @@ class ProviderGoogleGenAI(Provider):
                 # Process the final chunk for potential tool calls or other content
                 if chunk.candidates[0].content.parts:
                     final_response = LLMResponse("assistant", is_chunk=False)
-                    final_response.raw_completion = chunk
                     final_response.result_chain = self._process_content_parts(
                         chunk, final_response
                     )
