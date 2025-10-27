@@ -6,7 +6,7 @@ import os
 
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
-VERSION = "4.3.3"
+VERSION = "4.5.0"
 DB_PATH = os.path.join(get_astrbot_data_path(), "data_v4.db")
 
 # 默认配置
@@ -57,6 +57,7 @@ DEFAULT_CONFIG = {
         "web_search": False,
         "websearch_provider": "default",
         "websearch_tavily_key": [],
+        "websearch_baidu_app_builder_key": "",
         "web_search_link": False,
         "display_reasoning_text": False,
         "identifier": False,
@@ -71,6 +72,7 @@ DEFAULT_CONFIG = {
         "show_tool_use_status": False,
         "streaming_segmented": False,
         "max_agent_step": 30,
+        "tool_call_timeout": 60,
     },
     "provider_stt_settings": {
         "enable": False,
@@ -132,8 +134,11 @@ DEFAULT_CONFIG = {
     "persona": [],  # deprecated
     "timezone": "Asia/Shanghai",
     "callback_api_base": "",
-    "default_kb_collection": "",  # 默认知识库名称
+    "default_kb_collection": "",  # 默认知识库名称, 已经过时
     "plugin_set": ["*"],  # "*" 表示使用所有可用的插件, 空列表表示不使用任何插件
+    "kb_names": [],  # 默认知识库名称列表
+    "kb_fusion_top_k": 20,  # 知识库检索融合阶段返回结果数量
+    "kb_final_top_k": 5,  # 知识库检索最终返回结果数量
 }
 
 
@@ -160,10 +165,11 @@ CONFIG_METADATA_2 = {
                         "enable": False,
                         "appid": "",
                         "secret": "",
+                        "is_sandbox": False,
                         "callback_server_host": "0.0.0.0",
                         "port": 6196,
                     },
-                    "QQ 个人号(aiocqhttp)": {
+                    "QQ 个人号(OneBot v11)": {
                         "id": "default",
                         "type": "aiocqhttp",
                         "enable": False,
@@ -171,7 +177,7 @@ CONFIG_METADATA_2 = {
                         "ws_reverse_port": 6199,
                         "ws_reverse_token": "",
                     },
-                    "微信个人号(WeChatPadPro)": {
+                    "WeChatPadPro": {
                         "id": "wechatpadpro",
                         "type": "wechatpadpro",
                         "enable": False,
@@ -206,6 +212,18 @@ CONFIG_METADATA_2 = {
                         "api_base_url": "https://qyapi.weixin.qq.com/cgi-bin/",
                         "callback_server_host": "0.0.0.0",
                         "port": 6195,
+                    },
+                    "企业微信智能机器人": {
+                        "id": "wecom_ai_bot",
+                        "type": "wecom_ai_bot",
+                        "enable": True,
+                        "wecomaibot_init_respond_text": "💭 思考中...",
+                        "wecomaibot_friend_message_welcome_text": "",
+                        "wecom_ai_bot_name": "",
+                        "token": "",
+                        "encoding_aes_key": "",
+                        "callback_server_host": "0.0.0.0",
+                        "port": 6198,
                     },
                     "飞书(Lark)": {
                         "id": "lark",
@@ -254,6 +272,14 @@ CONFIG_METADATA_2 = {
                         "misskey_default_visibility": "public",
                         "misskey_local_only": False,
                         "misskey_enable_chat": True,
+                        # download / security options
+                        "misskey_allow_insecure_downloads": False,
+                        "misskey_download_timeout": 15,
+                        "misskey_download_chunk_size": 65536,
+                        "misskey_max_download_bytes": None,
+                        "misskey_enable_file_upload": True,
+                        "misskey_upload_concurrency": 3,
+                        "misskey_upload_folder": "",
                     },
                     "Slack": {
                         "id": "slack",
@@ -278,8 +304,26 @@ CONFIG_METADATA_2 = {
                         "satori_heartbeat_interval": 10,
                         "satori_reconnect_delay": 5,
                     },
+                    # "WebChat": {
+                    #     "id": "webchat",
+                    #     "type": "webchat",
+                    #     "enable": False,
+                    #     "webchat_link_path": "",
+                    #     "webchat_present_type": "fullscreen",
+                    # },
                 },
                 "items": {
+                    # "webchat_link_path": {
+                    #     "description": "链接路径",
+                    #     "_special": "webchat_link_path",
+                    #     "type": "string",
+                    # },
+                    # "webchat_present_type": {
+                    #     "_special": "webchat_present_type",
+                    #     "description": "展现形式",
+                    #     "type": "string",
+                    #     "options": ["fullscreen", "embedded"],
+                    # },
                     "satori_api_base_url": {
                         "description": "Satori API 终结点",
                         "type": "string",
@@ -382,6 +426,41 @@ CONFIG_METADATA_2 = {
                         "type": "bool",
                         "hint": "启用后，机器人将会监听和响应私信聊天消息",
                     },
+                    "misskey_enable_file_upload": {
+                        "description": "启用文件上传到 Misskey",
+                        "type": "bool",
+                        "hint": "启用后，适配器会尝试将消息链中的文件上传到 Misskey。URL 文件会先尝试服务器端上传，异步上传失败时会回退到下载后本地上传。",
+                    },
+                    "misskey_allow_insecure_downloads": {
+                        "description": "允许不安全下载（禁用 SSL 验证）",
+                        "type": "bool",
+                        "hint": "当远端服务器存在证书问题导致无法正常下载时，自动禁用 SSL 验证作为回退方案。适用于某些图床的证书配置问题。启用有安全风险，仅在必要时使用。",
+                    },
+                    "misskey_download_timeout": {
+                        "description": "远端下载超时时间（秒）",
+                        "type": "int",
+                        "hint": "下载远程文件时的超时时间（秒），用于异步上传回退到本地上传的场景。",
+                    },
+                    "misskey_download_chunk_size": {
+                        "description": "流式下载分块大小（字节）",
+                        "type": "int",
+                        "hint": "流式下载和计算 MD5 时使用的每次读取字节数，过小会增加开销，过大会占用内存。",
+                    },
+                    "misskey_max_download_bytes": {
+                        "description": "最大允许下载字节数（超出则中止）",
+                        "type": "int",
+                        "hint": "如果希望限制下载文件的最大大小以防止 OOM，请填写最大字节数；留空或 null 表示不限制。",
+                    },
+                    "misskey_upload_concurrency": {
+                        "description": "并发上传限制",
+                        "type": "int",
+                        "hint": "同时进行的文件上传任务上限（整数，默认 3）。",
+                    },
+                    "misskey_upload_folder": {
+                        "description": "上传到网盘的目标文件夹 ID",
+                        "type": "string",
+                        "hint": "可选：填写 Misskey 网盘中目标文件夹的 ID，上传的文件将放置到该文件夹内。留空则使用账号网盘根目录。",
+                    },
                     "telegram_command_register": {
                         "description": "Telegram 命令注册",
                         "type": "bool",
@@ -433,24 +512,38 @@ CONFIG_METADATA_2 = {
                         "hint": "启用后，机器人可以接收到频道的私聊消息。",
                     },
                     "ws_reverse_host": {
-                        "description": "反向 Websocket 主机地址(AstrBot 为服务器端)",
+                        "description": "反向 Websocket 主机",
                         "type": "string",
-                        "hint": "aiocqhttp 适配器的反向 Websocket 服务器 IP 地址，不包含端口号。",
+                        "hint": "AstrBot 将作为服务器端。",
                     },
                     "ws_reverse_port": {
                         "description": "反向 Websocket 端口",
                         "type": "int",
-                        "hint": "aiocqhttp 适配器的反向 Websocket 端口。",
                     },
                     "ws_reverse_token": {
                         "description": "反向 Websocket Token",
                         "type": "string",
-                        "hint": "aiocqhttp 适配器的反向 Websocket Token。未设置则不启用 Token 验证。",
+                        "hint": "反向 Websocket Token。未设置则不启用 Token 验证。",
+                    },
+                    "wecom_ai_bot_name": {
+                        "description": "企业微信智能机器人的名字",
+                        "type": "string",
+                        "hint": "请务必填写正确，否则无法使用一些指令。",
+                    },
+                    "wecomaibot_init_respond_text": {
+                        "description": "企业微信智能机器人初始响应文本",
+                        "type": "string",
+                        "hint": "当机器人收到消息时，首先回复的文本内容。留空则使用默认值。",
+                    },
+                    "wecomaibot_friend_message_welcome_text": {
+                        "description": "企业微信智能机器人私聊欢迎语",
+                        "type": "string",
+                        "hint": "当用户当天进入智能机器人单聊会话，回复欢迎语，留空则不回复。",
                     },
                     "lark_bot_name": {
                         "description": "飞书机器人的名字",
                         "type": "string",
-                        "hint": "请务必填对，否则 @ 机器人将无法唤醒，只能通过前缀唤醒。",
+                        "hint": "请务必填写正确，否则 @ 机器人将无法唤醒，只能通过前缀唤醒。",
                     },
                     "discord_token": {
                         "description": "Discord Bot Token",
@@ -1324,6 +1417,7 @@ CONFIG_METADATA_2 = {
                         "description": "嵌入维度",
                         "type": "int",
                         "hint": "嵌入向量的维度。根据模型不同，可能需要调整，请参考具体模型的文档。此配置项请务必填写正确，否则将导致向量数据库无法正常工作。",
+                        "_special": "get_embedding_dim",
                     },
                     "embedding_model": {
                         "description": "嵌入模型",
@@ -1845,6 +1939,10 @@ CONFIG_METADATA_2 = {
                         "description": "工具调用轮数上限",
                         "type": "int",
                     },
+                    "tool_call_timeout": {
+                        "description": "工具调用超时时间（秒）",
+                        "type": "int",
+                    },
                 },
             },
             "provider_stt_settings": {
@@ -1967,6 +2065,9 @@ CONFIG_METADATA_2 = {
             "default_kb_collection": {
                 "type": "string",
             },
+            "kb_names": {"type": "list", "items": {"type": "string"}},
+            "kb_fusion_top_k": {"type": "int", "default": 20},
+            "kb_final_top_k": {"type": "int", "default": 5},
         },
     },
 }
@@ -2045,10 +2146,22 @@ CONFIG_METADATA_3 = {
                 "description": "知识库",
                 "type": "object",
                 "items": {
-                    "default_kb_collection": {
-                        "description": "默认使用的知识库",
-                        "type": "string",
+                    "kb_names": {
+                        "description": "知识库列表",
+                        "type": "list",
+                        "items": {"type": "string"},
                         "_special": "select_knowledgebase",
+                        "hint": "支持多选",
+                    },
+                    "kb_fusion_top_k": {
+                        "description": "融合检索结果数",
+                        "type": "int",
+                        "hint": "多个知识库检索结果融合后的返回结果数量",
+                    },
+                    "kb_final_top_k": {
+                        "description": "最终返回结果数",
+                        "type": "int",
+                        "hint": "从知识库中检索到的结果数量，越大可能获得越多相关信息，但也可能引入噪音。建议根据实际需求调整",
                     },
                 },
             },
@@ -2063,7 +2176,7 @@ CONFIG_METADATA_3 = {
                     "provider_settings.websearch_provider": {
                         "description": "网页搜索提供商",
                         "type": "string",
-                        "options": ["default", "tavily"],
+                        "options": ["default", "tavily", "baidu_ai_search"],
                     },
                     "provider_settings.websearch_tavily_key": {
                         "description": "Tavily API Key",
@@ -2072,6 +2185,14 @@ CONFIG_METADATA_3 = {
                         "hint": "可添加多个 Key 进行轮询。",
                         "condition": {
                             "provider_settings.websearch_provider": "tavily",
+                        },
+                    },
+                    "provider_settings.websearch_baidu_app_builder_key": {
+                        "description": "百度千帆智能云 APP Builder API Key",
+                        "type": "string",
+                        "hint": "参考：https://console.bce.baidu.com/iam/#/iam/apikey/list",
+                        "condition": {
+                            "provider_settings.websearch_provider": "baidu_ai_search",
                         },
                     },
                     "provider_settings.web_search_link": {
@@ -2109,6 +2230,10 @@ CONFIG_METADATA_3 = {
                         "description": "工具调用轮数上限",
                         "type": "int",
                     },
+                    "provider_settings.tool_call_timeout": {
+                        "description": "工具调用超时时间（秒）",
+                        "type": "int",
+                    },
                     "provider_settings.streaming_response": {
                         "description": "流式回复",
                         "type": "bool",
@@ -2130,7 +2255,7 @@ CONFIG_METADATA_3 = {
                     "provider_settings.wake_prefix": {
                         "description": "LLM 聊天额外唤醒前缀 ",
                         "type": "string",
-                        "hint": "例子: 如果唤醒前缀为 `/`, 额外聊天唤醒前缀为 `chat`，则需要 `/chat` 才会触发 LLM 请求。默认为空。",
+                        "hint": "如果唤醒前缀为 `/`, 额外聊天唤醒前缀为 `chat`，则需要 `/chat` 才会触发 LLM 请求。默认为空。",
                     },
                     "provider_settings.prompt_prefix": {
                         "description": "用户提示词",
