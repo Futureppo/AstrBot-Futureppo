@@ -259,6 +259,10 @@ class ProviderManager:
                     from .sources.whisper_selfhosted_source import (
                         ProviderOpenAIWhisperSelfHost as ProviderOpenAIWhisperSelfHost,
                     )
+                case "xinference_stt":
+                    from .sources.xinference_stt_provider import (
+                        ProviderXinferenceSTT as ProviderXinferenceSTT,
+                    )
                 case "openai_tts_api":
                     from .sources.openai_tts_api_source import (
                         ProviderOpenAITTSAPI as ProviderOpenAITTSAPI,
@@ -310,6 +314,10 @@ class ProviderManager:
                 case "vllm_rerank":
                     from .sources.vllm_rerank_source import (
                         VLLMRerankProvider as VLLMRerankProvider,
+                    )
+                case "xinference_rerank":
+                    from .sources.xinference_rerank_source import (
+                        XinferenceRerankProvider as XinferenceRerankProvider,
                     )
         except (ImportError, ModuleNotFoundError) as e:
             logger.critical(

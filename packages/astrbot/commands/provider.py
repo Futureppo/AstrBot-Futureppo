@@ -161,7 +161,7 @@ class ProviderCommands:
                         )
                     message.set_result(
                         MessageEventResult().message(
-                            f"切换模型成功。当前提供商: {prov.meta().id} 当前模型: [{prov.get_model()}]"
+                            f"切换模型成功。当前提供商: [{prov.meta().id}] 当前模型: [{prov.get_model()}]"
                         )
                     )
             else:
