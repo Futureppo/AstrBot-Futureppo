@@ -2647,7 +2647,7 @@ CONFIG_METADATA_3 = {
                     "provider_settings.sanitize_context_by_modalities": {
                         "description": "按模型能力清理历史上下文",
                         "type": "bool",
-                        "hint": "开启后，在每次请求 LLM 前会按当前 provider 的 modalities 删除 contexts 中不支持的图片/工具调用结构（会改变模型看到的历史）",
+                        "hint": "开启后，在每次请求 LLM 前会按当前模型提供商中所选择的模型能力删除对话中不支持的图片/工具调用结构（会改变模型看到的历史）",
                         "condition": {
                             "provider_settings.agent_runner_type": "local",
                         },
