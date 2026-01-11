@@ -250,7 +250,10 @@ class InternalAgentSubStage(Stage):
                     if str(part.get("type", "")).lower() != "text":
                         return False
                     text = part.get("text", "")
-                    if not isinstance(text, str) or text.strip() not in placeholder_texts:
+                    if (
+                        not isinstance(text, str)
+                        or text.strip() not in placeholder_texts
+                    ):
                         return False
                 elif isinstance(part, str):
                     if part.strip() not in placeholder_texts:
