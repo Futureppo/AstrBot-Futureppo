@@ -239,8 +239,8 @@ class InternalAgentSubStage(Stage):
                 continue
 
             role = msg.get("role")
-            if not isinstance(role, str):
-                role = ""
+            if not role:
+                continue
 
             new_msg: dict = msg
 
