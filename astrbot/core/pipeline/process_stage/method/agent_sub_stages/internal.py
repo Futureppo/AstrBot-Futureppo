@@ -250,16 +250,11 @@ class InternalAgentSubStage(Stage):
                     # tool response block
                     removed_tool_messages += 1
                     continue
-                if role == "assistant" and (
-                    "tool_calls" in new_msg or "function_call" in new_msg
-                ):
+                if role == "assistant" and "tool_calls" in new_msg:
                     # assistant message with tool calls
                     if "tool_calls" in new_msg:
                         removed_tool_calls += 1
-                    elif "function_call" in new_msg:
-                        removed_tool_calls += 1
                     new_msg.pop("tool_calls", None)
-                    new_msg.pop("function_call", None)
                     new_msg.pop("tool_call_id", None)
 
             # image sanitize
@@ -283,9 +278,7 @@ class InternalAgentSubStage(Stage):
             # drop empty assistant messages (e.g. only tool_calls without content)
             if role == "assistant":
                 content = new_msg.get("content")
-                has_tool_calls = bool(
-                    new_msg.get("tool_calls") or new_msg.get("function_call")
-                )
+                has_tool_calls = bool(new_msg.get("tool_calls"))
                 if not has_tool_calls:
                     if not content:
                         continue
