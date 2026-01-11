@@ -218,49 +218,16 @@ class InternalAgentSubStage(Stage):
         if not isinstance(req.contexts, list) or not req.contexts:
             return
 
-        modalities_sentinel = object()
-        raw_modalities = provider.provider_config.get("modalities", modalities_sentinel)
-        # Backward compatibility: if modalities is not configured, do not sanitize.
-        if raw_modalities is modalities_sentinel:
-            return
-        if not isinstance(raw_modalities, list):
+        modalities = provider.provider_config.get("modalities", None)
+        # if modalities is not configured, do not sanitize.
+        if not modalities or not isinstance(modalities, list):
             return
 
-        normalized_modalities = {
-            str(modality).lower()
-            for modality in raw_modalities
-            if isinstance(modality, str) and modality
-        }
-        supports_image = bool({"image", "image_url", "vision"} & normalized_modalities)
-        supports_tool_use = bool(
-            {"tool_use", "tools", "tool", "function_call", "function"}
-            & normalized_modalities
-        )
+        supports_image = bool("image" in modalities)
+        supports_tool_use = bool("tool_use" in modalities)
 
         if supports_image and supports_tool_use:
             return
-
-        placeholder_texts = {"[图片]", "[image]", "[Image]", "[IMAGE]"}
-
-        def is_only_image_placeholder(parts: list) -> bool:
-            if not parts:
-                return False
-            for part in parts:
-                if isinstance(part, dict):
-                    if str(part.get("type", "")).lower() != "text":
-                        return False
-                    text = part.get("text", "")
-                    if (
-                        not isinstance(text, str)
-                        or text.strip() not in placeholder_texts
-                    ):
-                        return False
-                elif isinstance(part, str):
-                    if part.strip() not in placeholder_texts:
-                        return False
-                else:
-                    return False
-            return True
 
         sanitized_contexts: list[dict] = []
         removed_image_blocks = 0
@@ -280,15 +247,16 @@ class InternalAgentSubStage(Stage):
             # tool_use sanitize
             if not supports_tool_use:
                 if role == "tool":
+                    # tool response block
                     removed_tool_messages += 1
                     continue
                 if role == "assistant" and (
                     "tool_calls" in new_msg or "function_call" in new_msg
                 ):
-                    new_msg = dict(new_msg)
+                    # assistant message with tool calls
                     if "tool_calls" in new_msg:
                         removed_tool_calls += 1
-                    if "function_call" in new_msg:
+                    elif "function_call" in new_msg:
                         removed_tool_calls += 1
                     new_msg.pop("tool_calls", None)
                     new_msg.pop("function_call", None)
@@ -310,11 +278,6 @@ class InternalAgentSubStage(Stage):
                         filtered_parts.append(part)
 
                     if removed_any_image:
-                        if not filtered_parts or is_only_image_placeholder(
-                            filtered_parts
-                        ):
-                            continue
-                        new_msg = dict(new_msg)
                         new_msg["content"] = filtered_parts
 
             # drop empty assistant messages (e.g. only tool_calls without content)
@@ -324,11 +287,9 @@ class InternalAgentSubStage(Stage):
                     new_msg.get("tool_calls") or new_msg.get("function_call")
                 )
                 if not has_tool_calls:
-                    if content is None:
+                    if not content:
                         continue
                     if isinstance(content, str) and not content.strip():
-                        continue
-                    if isinstance(content, list) and len(content) == 0:
                         continue
 
             sanitized_contexts.append(new_msg)
