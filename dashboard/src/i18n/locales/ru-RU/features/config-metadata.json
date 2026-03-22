@@ -614,6 +614,30 @@
                 "description": "Отправлять ответы только через Webhook",
                 "hint": "Все ответы WeCom AI Bot будут идти через вебхук пуш-сообщений. Поддерживает больше типов контента."
             },
+            "weixin_oc_base_url": {
+                "description": "URL API iLink",
+                "hint": "Значение по умолчанию: https://ilinkai.weixin.qq.com"
+            },
+            "weixin_oc_bot_type": {
+                "description": "bot_type (параметр входа по QR)",
+                "hint": "Значение по умолчанию: 3"
+            },
+            "weixin_oc_qr_poll_interval": {
+                "description": "Интервал опроса статуса QR (сек)",
+                "hint": "Пауза между запросами статуса QR-кода."
+            },
+            "weixin_oc_long_poll_timeout_ms": {
+                "description": "Таймаут long-poll getUpdates (мс)",
+                "hint": "Параметр таймаута запроса получения сообщений."
+            },
+            "weixin_oc_api_timeout_ms": {
+                "description": "Таймаут HTTP запроса (мс)",
+                "hint": "Общий таймаут для HTTP запросов."
+            },
+            "weixin_oc_token": {
+                "description": "Token после входа (опционально)",
+                "hint": "Автоматически сохраняется после QR логина; для сложных сценариев можно ввести вручную."
+            },
             "kook_bot_token": {
                 "description": "Токен бота",
                 "type": "string",
@@ -1392,9 +1416,37 @@
                 "description": "Таймаут (сек)",
                 "hint": "Максимальное время ожидания ответа."
             },
+            "mimo-stt-system-prompt": {
+                "description": "Системный промпт",
+                "hint": "System prompt, который управляет поведением MiMo STT при распознавании."
+            },
+            "mimo-stt-user-prompt": {
+                "description": "Пользовательский промпт",
+                "hint": "Дополнительный user prompt для MiMo STT, который помогает задать формат результата."
+            },
             "openai-tts-voice": {
                 "description": "API Base URL",
                 "hint": "Голоса OpenAI TTS: alloy, echo и др."
+            },
+            "mimo-tts-voice": {
+                "description": "Голос",
+                "hint": "Имя голоса MiMo TTS. Поддерживаются значения 'mimo_default', 'default_en' и 'default_zh'."
+            },
+            "mimo-tts-format": {
+                "description": "Формат вывода",
+                "hint": "Формат аудио, создаваемого MiMo TTS. Поддерживаются 'wav', 'mp3' и 'pcm'."
+            },
+            "mimo-tts-style-prompt": {
+                "description": "Подсказка стиля",
+                "hint": "Задает стиль речи, тон или эмоцию, например мягкий, живой или спокойный. Необязательно."
+            },
+            "mimo-tts-dialect": {
+                "description": "Диалект",
+                "hint": "Диалект или акцент для синтезируемой речи, например сычуаньский диалект. Необязательно."
+            },
+            "mimo-tts-seed-text": {
+                "description": "Начальный текст",
+                "hint": "Эталонный текст, который помогает задать особенности голоса и манеру речи."
             },
             "fishaudio-tts-character": {
                 "description": "Персонаж",
